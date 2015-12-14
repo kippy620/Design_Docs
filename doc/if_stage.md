@@ -10,8 +10,6 @@ IF 阶段主要负责取指令，并决定下一条 PC 寄存器的内容。 IF 
 | if_reg   | if_reg.v   | IF 阶段流水线寄存器 |
 | bus_if   | bus_if.v   | 总线接口            |
 
-![if_module](/image/if_module.png)
-
 ## **IF 阶段的流水线寄存器**
 ### IF 阶段流水线寄存器输入输出端口
 IF 阶段的流水线寄存器（if_reg）的信号线一览如表 1-2 所示。
@@ -35,7 +33,7 @@ IF 阶段的流水线寄存器（if_reg）的信号线一览如表 1-2 所示。
 
 故 IF 阶段的顶层模块的连接图如图 1-2 所示。
 
-![Figure 1-2](/image/if_modules.png)
+![Figure 1-2](/image/if_stage.png)
 
 IF 阶段的流水线寄存器（if_reg）的程序如下所示。
 ```python
