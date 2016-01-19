@@ -33,7 +33,7 @@ module icache(
     /* L2_cache part */
     input              L2_busy,       // busy signal of L2_cache
     input              L2_rdy,        // ready signal of L2_cache
-    input              complete,         // complete op writing to L1
+    input              complete,      // complete op writing to L1
     output reg         irq            // icache request
     );
     wire       [1:0]   offset;        // offset of block
@@ -43,7 +43,8 @@ module icache(
     reg                tagcomp_hit;   // tag hit mark
     reg        [2:0]   state;         // state of control
     wire               valid0,valid1; // valid signal of tag
-    reg clk_tmp;
+    reg                clk_tmp;       // temporary clk
+    
     assign valid0        = tag0_rd[20];
     assign valid1        = tag1_rd[20];
     assign index         = if_addr [11:4];
@@ -53,20 +54,20 @@ module icache(
         clk_tmp = #1 clk;
     end
     always @(*)begin // path choose
-		hitway0 = (tag0_rd[19:0] == if_addr[31:12]) & valid0;
-		hitway1 = (tag1_rd[19:0] == if_addr[31:12]) & valid1;
-		if(hitway0 == `ENABLE)begin
-			tagcomp_hit = `ENABLE;
-			hitway = `WAY0;
-		end
-		else if(hitway1 == `ENABLE)begin
-			tagcomp_hit = `ENABLE;
-			hitway = `WAY1;
-		end
-		else begin
-			tagcomp_hit = `DISABLE;
-		end
-	end
+        hitway0 = (tag0_rd[19:0] == if_addr[31:12]) & valid0;
+        hitway1 = (tag1_rd[19:0] == if_addr[31:12]) & valid1;
+        if(hitway0 == `ENABLE)begin
+            tagcomp_hit = `ENABLE;
+            hitway = `WAY0;
+        end
+        else if(hitway1 == `ENABLE)begin
+            tagcomp_hit = `ENABLE;
+            hitway = `WAY1;
+        end
+        else begin
+            tagcomp_hit = `DISABLE;
+        end
+    end
 
     always @(posedge clk_tmp) begin // cache control
         if (rst == `ENABLE) begin // reset
@@ -125,15 +126,14 @@ module icache(
                         if(L2_busy == `ENABLE) begin
                             state  <= `WAIT_L2_BUSY;
                         end else begin
+                            irq <= `ENABLE;
                             state  <= `L2_ACCESS;
                         end
                     end 
                 end
                 `L2_ACCESS:begin // access L2, wait L2 reading right 
-                    irq <= `ENABLE;
                     if(L2_rdy == `ENABLE)begin
                         state  <= `WRITE_IC;
-                        //L2_rdy <= `DISABLE;
                         if (valid0 == 1'b1) begin
                             if (valid1 == 1'b1) begin
                                 if(LRU == 1'b0) begin

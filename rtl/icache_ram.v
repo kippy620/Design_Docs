@@ -19,13 +19,12 @@ module tag_ram(
     output      [20:0]  tag0_rd,        // read data of tag0
     output      [20:0]  tag1_rd,        // read data of tag1
     output              LUR,            // read data of tag
-    output  reg         complete     // complete write from L2 to L1
+    output  reg         complete        // complete write from L2 to L1
     );
     reg         [42:0]  ram_tag[255:0]; // ram of tag
     wire        [42:0]  rd;             // read data of tag
     wire        [42:0]  read;           // read data of tag
-    reg         [42:0]  wd0,wd1,wd;             // write data of tag
-    //reg         [7:0]   i;
+    reg         [42:0]  wd0,wd1,wd;     // write data of tag
 
     integer  i=0;
     initial begin
@@ -150,19 +149,19 @@ module L2_tag_ram(
          L2_complete       <= `DISABLE;
         if (L2_tag0_rw == `WRITE) begin // 只指令cache，先不考虑dirty
             wd<=wd0;
-            ram_tag[L2_index] <= wd;
+            ram_tag[L2_index] <= wd0;
             L2_complete       <= `ENABLE;
         end else if (L2_tag1_rw == `WRITE) begin
             wd<=wd1;
-            ram_tag[L2_index] <= wd;
+            ram_tag[L2_index] <= wd1;
             L2_complete       <= `ENABLE;
         end else if (L2_tag2_rw == `WRITE) begin
             wd<=wd2;
-            ram_tag[L2_index] <= wd;
+            ram_tag[L2_index] <= wd2;
             L2_complete       <= `ENABLE;
         end else if (L2_tag3_rw == `WRITE) begin
             wd<=wd3;
-            ram_tag[L2_index] <= wd;
+            ram_tag[L2_index] <= wd3;
             L2_complete       <= `ENABLE;
         end
     end
@@ -174,22 +173,22 @@ endmodule
 `include "stddef.h"
 
 module L2_data_ram(
-    input           clk,             // clock
-    input           L2_data0_rw,        // the mark of cache_data0 write signal 
-    input           L2_data1_rw,        // the mark of cache_data1 write signal 
-    input           L2_data2_rw,        // the mark of cache_data2 write signal 
-    input           L2_data3_rw,        // the mark of cache_data3 write signal 
-    input   [8:0]   L2_index,           // address of cache
-    input   [511:0] L2_data_wd,         // write data of L2_cache
-    output  [511:0] L2_data0_rd,        // read data of cache_data0
-    output  [511:0] L2_data1_rd,         // read data of cache_data1
-    output  [511:0] L2_data2_rd,        // read data of cache_data2
-    output  [511:0] L2_data3_rd         // read data of cache_data3
+    input           clk,                    // clock
+    input           L2_data0_rw,            // the mark of cache_data0 write signal 
+    input           L2_data1_rw,            // the mark of cache_data1 write signal 
+    input           L2_data2_rw,            // the mark of cache_data2 write signal 
+    input           L2_data3_rw,            // the mark of cache_data3 write signal 
+    input   [8:0]   L2_index,               // address of cache
+    input   [511:0] L2_data_wd,             // write data of L2_cache
+    output  [511:0] L2_data0_rd,            // read data of cache_data0
+    output  [511:0] L2_data1_rd,            // read data of cache_data1
+    output  [511:0] L2_data2_rd,            // read data of cache_data2
+    output  [511:0] L2_data3_rd             // read data of cache_data3
     );
-    reg     [2047:0]  ram_data[511:0]; // ram of data
-    wire    [2047:0]  rd;             // read data of data
-    wire    [2047:0]  read;           // read data of data
-    reg    [2047:0]  wd,wd0,wd1,wd2,wd3;             // write data of data
+    reg     [2047:0]  ram_data[511:0];      // ram of data
+    wire    [2047:0]  rd;                   // read data of data
+    wire    [2047:0]  read;                 // read data of data
+    reg    [2047:0]  wd,wd0,wd1,wd2,wd3;    // write data of data
     integer  i=0;
     initial begin
         while(i <=511) begin
@@ -215,16 +214,16 @@ module L2_data_ram(
     always @(posedge clk) begin
         if (L2_data0_rw == `WRITE) begin
             wd              <= wd0;
-            ram_data[L2_index] <= wd;
+            ram_data[L2_index] <= wd0;
         end else if (L2_data1_rw == `WRITE) begin
             wd              <= wd1;
-            ram_data[L2_index] <= wd;
+            ram_data[L2_index] <= wd1;
         end else if (L2_data2_rw == `WRITE) begin
             wd              <= wd2;
-            ram_data[L2_index] <= wd;
+            ram_data[L2_index] <= wd2;
         end else if (L2_data3_rw == `WRITE) begin
             wd              <= wd3;
-            ram_data[L2_index] <= wd;
+            ram_data[L2_index] <= wd3;
         end
     end
 endmodule

@@ -13,17 +13,17 @@
 
 module L2_icache(
     // read
-    input               clk,
-    input               rst,                 // reset
+    input               clk,                // clock
+    input               rst,                // reset
     /* CPU part */
-    input       [31:0]  if_addr,             // address of fetching instruction
-    input               rw,                  // read / write signal of CPU
-    output reg          L2_miss_stall,       //
+    input       [31:0]  if_addr,            // address of fetching instruction
+    input               rw,                 // read / write signal of CPU
+    output reg          L2_miss_stall,      // miss caused by L2C miss
     /*cache part*/
-    input               irq,                 // icache request
-    input               complete,
-    input               L2_complete,
-    input       [2:0]   PLUR,
+    input               irq,                // icache request
+    input               complete,           // complete mark of writing into L1C
+    input               L2_complete,        // complete mark of writing into L2C
+    input       [2:0]   PLUR,               // the number of replacing mark
 //  input               drq,                 // dcache request
     input       [18:0]  L2_tag0_rd,         // read data of tag0
     input       [18:0]  L2_tag1_rd,         // read data of tag1
@@ -57,10 +57,11 @@ module L2_icache(
     reg                 hitway2;            // the mark of choosing path0 
     reg                 hitway3;            // the mark of choosing path1
     reg                 tagcomp_hit;        // tag hit mark
-    reg         [1:0]   state;
+    reg         [2:0]   state;              // state of L2_icache
+    reg                 clk_tmp;            // temporary clk
     assign L2_index   = if_addr [14:6];
     assign offset     = if_addr [5:4];
-    assign L2_tag_wd  = if_addr [31:12];
+    assign L2_tag_wd  = if_addr [31:15];
     always @(*)begin // path choose
         hitway0 = (L2_tag0_rd[16:0] == if_addr[31:15]) & L2_tag0_rd[18];
         hitway1 = (L2_tag1_rd[16:0] == if_addr[31:15]) & L2_tag1_rd[18];
@@ -69,21 +70,23 @@ module L2_icache(
         if(hitway0 == `ENABLE)begin
             tagcomp_hit = `ENABLE;
             hitway      = `WAY0;
-        end else if(hitway1 == `ENABLE)begin
+        end else if(hitway1 == `ENABLE) begin
             tagcomp_hit = `ENABLE;
             hitway      = `WAY1;
-        end else if(hitway2 == `ENABLE)begin
+        end else if(hitway2 == `ENABLE) begin
             tagcomp_hit = `ENABLE;
             hitway      = `WAY2;
-        end else if(hitway3 == `ENABLE)begin
+        end else if(hitway3 == `ENABLE) begin
             tagcomp_hit = `ENABLE;
             hitway      = `WAY3;
         end else begin
             tagcomp_hit = `DISABLE;
         end
-	end
-  
-    always @(posedge clk) begin // cache control
+    end
+    always @(*) begin
+        clk_tmp = #1 clk;
+    end
+    always @(posedge clk_tmp) begin // cache control
         if(rst == `ENABLE) begin // reset
             state  <= `L2_IDLE;
         end else begin
@@ -111,7 +114,6 @@ module L2_icache(
                         L2_rdy        <= `ENABLE;
                         case(hitway)
                             `WAY0:begin
-                                L2_data0_rw  <= `READ;
                                 case(offset)
                                     `WORD0:begin
                                         data_wd <= L2_data0_rd[127:0];
@@ -128,7 +130,6 @@ module L2_icache(
                                 endcase // case(offset)  
                             end // hitway == 0
                             `WAY1:begin
-                                L2_data1_rw  <= `READ;
                                 case(offset)
                                     `WORD0:begin
                                         data_wd <= L2_data1_rd[127:0];
@@ -145,7 +146,6 @@ module L2_icache(
                                 endcase // case(offset)  
                             end // hitway == 1
                             `WAY2:begin
-                                L2_data2_rw  <= `READ;
                                 case(offset)
                                     `WORD0:begin
                                         data_wd <= L2_data2_rd[127:0];
@@ -162,7 +162,6 @@ module L2_icache(
                                 endcase // case(offset)  
                             end // hitway == 2
                             `WAY3:begin
-                                L2_data3_rw  <= `READ;
                                 case(offset)
                                     `WORD0:begin
                                         data_wd <= L2_data3_rd[127:0];
@@ -180,9 +179,10 @@ module L2_icache(
                             end // hitway == 3
                         endcase // case(hitway) 
                     end else begin // cache miss
-                        L2_miss_stall    <= `ENABLE;
-                        mem_rw   <= rw;
-                        mem_addr <= if_addr[31:6];
+                        L2_miss_stall <= `ENABLE;
+                        mem_rw        <= rw;
+                        mem_addr      <= if_addr[31:6];
+                        state         <= `WRITE_L2;
                         if (L2_tag0_rd[18] == `ENABLE) begin
                             if (L2_tag1_rd[18] == `ENABLE) begin
                                 if (L2_tag2_rd[18] == `ENABLE) begin
@@ -229,9 +229,17 @@ module L2_icache(
                 end
                 `WRITE_L2:begin // 等待L2返回指令块 
                     if(L2_complete == `ENABLE)begin
-                        state <= `L2_IDLE;
+                        state       <= `ACCESS_L2;
+                        L2_tag0_rw  <= rw;
+                        L2_tag1_rw  <= rw;
+                        L2_tag2_rw  <= rw;
+                        L2_tag3_rw  <= rw;
+                        L2_data0_rw <= rw;
+                        L2_data1_rw <= rw;
+                        L2_data2_rw <= rw;
+                        L2_data3_rw <= rw;                        
                     end else begin
-                        state <= `WRITE_L2;
+                        state       <= `WRITE_L2;
                     end
                 end
             endcase
